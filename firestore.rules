@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// Aturan keamanan ClassMate (PRD bagian 8.4).
+// Hanya email yang ada di koleksi `users` yang boleh membaca/menulis data.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function emailSaya() {
+      return request.auth.token.email.lower();
+    }
+    function pathUser() {
+      return /databases/$(db)/documents/users/$(emailSaya());
+    }
+    function terdaftar() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(pathUser());
+    }
+    function isAdmin() {
+      return terdaftar() && get(pathUser()).data.peran == 'admin';
+    }
+    function sesiValid(sesiId, token) {
+      let sesi  = get(/databases/$(db)/documents/sesi_absensi/$(sesiId)).data;
+      let kunci = get(/databases/$(db)/documents/sesi_absensi/$(sesiId)/rahasia/token).data;
+      return sesi.status == 'buka'
+        && request.time >= sesi.mulai
+        && request.time < sesi.berakhir
+        && token == kunci.nilai;
+    }
+    // ID dokumen berakhiran "_<uid>" milik pengguna yang login.
+    function milikSaya(id) {
+      return id.matches('.+_' + request.auth.uid);
+    }
+
+    // Data akun diisi Admin sebelum aplikasi dipakai.
+    match /users/{email} {
+      allow read: if request.auth != null
+        && (emailSaya() == email || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /kelas/{id} {
+      allow read: if terdaftar();
+      allow write: if isAdmin();
+    }
+
+    match /mata_kuliah/{id} {
+      allow read: if terdaftar();
+      allow write: if isAdmin();
+    }
+
+    match /jadwal/{id} {
+      allow read: if terdaftar();
+      allow write: if isAdmin();
+    }
+
+    match /sesi_absensi/{sesiId} {
+      allow read: if terdaftar();
+      allow write: if isAdmin();
+
+      // Token absensi: hanya Admin yang bisa membaca.
+      match /rahasia/{doc} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /kehadiran/{id} {
+      allow get: if isAdmin() || (terdaftar() && milikSaya(id));
+      allow list: if isAdmin()
+        || (terdaftar() && resource.data.uid == request.auth.uid);
+      allow create: if terdaftar()
+        && id == request.resource.data.sesi_id + '_' + request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == emailSaya()
+        && request.resource.data.waktu_absen == request.time
+        && sesiValid(request.resource.data.sesi_id, request.resource.data.token);
+      // Tidak bisa diubah atau dihapus, sehingga absen ganda tertolak.
+      allow update, delete: if false;
+    }
+
+    match /tugas/{id} {
+      allow read: if terdaftar();
+      allow write: if isAdmin();
+    }
+
+    match /pengumpulan/{id} {
+      allow get: if isAdmin() || (terdaftar() && milikSaya(id));
+      allow list: if isAdmin()
+        || (terdaftar() && resource.data.uid == request.auth.uid);
+      // Dibuat atau diganti hanya sebelum tenggat tugas.
+      allow create, update: if terdaftar()
+        && id == request.resource.data.tugas_id + '_' + request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == emailSaya()
+        && request.time < get(/databases/$(db)/documents/tugas/$(request.resource.data.tugas_id)).data.tenggat;
+      allow delete: if false;
+    }
+
+    // Uang kas (opsional, prioritas Could).
+    match /kas_transaksi/{id} {
+      allow read: if isAdmin()
+        || (terdaftar() && resource.data.email == emailSaya());
+      allow write: if isAdmin();
+    }
+  }
+}
