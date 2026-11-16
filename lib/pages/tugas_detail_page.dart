@@ -6,23 +6,29 @@ import '../core/theme.dart';
 import '../models/pengumpulan.dart';
 import '../models/tugas.dart';
 import '../widgets/animasi.dart';
+import '../widgets/animasi_lanjut.dart';
 import '../widgets/umum.dart';
 import 'tugas_page.dart';
 
 /// Membuka halaman detail tugas di atas tab yang sedang aktif.
-void bukaDetailTugas(BuildContext context, Tugas tugas) {
+///
+/// [tagJudul] mengaktifkan animasi judul yang terbang dari kartu asal; isi
+/// hanya bila kartu asal memakai JudulHero dengan tag yang sama.
+void bukaDetailTugas(BuildContext context, Tugas tugas, {Object? tagJudul}) {
   final scope = AppScope.baca(context);
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => scope.bungkus(TugasDetailPage(tugas: tugas)),
+      builder: (_) =>
+          scope.bungkus(TugasDetailPage(tugas: tugas, tagJudul: tagJudul)),
     ),
   );
 }
 
 class TugasDetailPage extends StatefulWidget {
-  const TugasDetailPage({super.key, required this.tugas});
+  const TugasDetailPage({super.key, required this.tugas, this.tagJudul});
 
   final Tugas tugas;
+  final Object? tagJudul;
 
   @override
   State<TugasDetailPage> createState() => _TugasDetailPageState();
@@ -131,7 +137,14 @@ class _TugasDetailPageState extends State<TugasDetailPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(tugas.judul, style: t.headlineMedium),
+                  if (widget.tagJudul case final tag?)
+                    JudulHero(
+                      tag: tag,
+                      teks: tugas.judul,
+                      style: t.headlineMedium,
+                    )
+                  else
+                    Text(tugas.judul, style: t.headlineMedium),
                   const SizedBox(height: 16),
                   KotakInfo(
                     ikon: Icons.event_outlined,

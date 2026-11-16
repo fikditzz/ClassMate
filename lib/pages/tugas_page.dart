@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../models/pengumpulan.dart';
 import '../models/tugas.dart';
 import '../widgets/animasi.dart';
+import '../widgets/animasi_lanjut.dart';
 import '../widgets/umum.dart';
 import 'tugas_detail_page.dart';
 
@@ -226,7 +227,17 @@ class _ChipFilter extends StatelessWidget {
               duration: Gerak.sedang,
               style: Theme.of(context).textTheme.labelLarge!
                   .copyWith(color: aktif ? Warna.primer : Warna.teks),
-              child: Text(jumlah == null ? label : '$label ($jumlah)'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(label),
+                  if (jumlah != null) ...[
+                    const Text(' ('),
+                    AngkaBerganti(jumlah!),
+                    const Text(')'),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -287,7 +298,8 @@ class _KartuTugas extends StatelessWidget {
 
     return Kartu(
       strip: strip,
-      onTap: () => bukaDetailTugas(context, tugas),
+      onTap: () =>
+          bukaDetailTugas(context, tugas, tagJudul: _tagJudul(tugas.id)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -308,7 +320,12 @@ class _KartuTugas extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text(tugas.judul, style: t.titleLarge),
+          // Judul "terbang" ke halaman detail saat kartu diketuk.
+          JudulHero(
+            tag: _tagJudul(tugas.id),
+            teks: tugas.judul,
+            style: t.titleLarge,
+          ),
           const SizedBox(height: 10),
           if (!admin && p != null)
             KotakInfo(
@@ -520,3 +537,8 @@ class _BelumAdaMataKuliah extends StatelessWidget {
     ringkas: true,
   );
 }
+
+/// Tag Hero judul tugas. Hanya daftar di tab Tugas yang memakainya, agar
+/// tidak bentrok dengan judul yang sama di tab lain (semua tab hidup
+/// bersamaan di IndexedStack).
+String _tagJudul(String tugasId) => 'judul-tugas-$tugasId';

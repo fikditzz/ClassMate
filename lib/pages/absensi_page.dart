@@ -9,6 +9,7 @@ import '../models/kehadiran.dart';
 import '../models/sesi_absensi.dart';
 import '../repositories/absensi_repository.dart';
 import '../widgets/animasi.dart';
+import '../widgets/animasi_lanjut.dart';
 import '../widgets/umum.dart';
 
 class AbsensiPage extends StatefulWidget {
@@ -526,14 +527,9 @@ class _LayarBerhasil extends StatelessWidget {
                     color: Warna.suksesMuda,
                     shape: BoxShape.circle,
                   ),
-                  child: const MunculMemantul(
-                    tunda: 0.25,
-                    child: Icon(
-                      Icons.check_circle,
-                      size: 56,
-                      color: Warna.sukses,
-                    ),
-                  ),
+                  alignment: Alignment.center,
+                  // Lingkaran menyapu lalu centang tergambar.
+                  child: const CentangDigambar(ukuran: 56, warna: Warna.sukses),
                 ),
               ),
               const SizedBox(height: 16),

@@ -7,6 +7,7 @@ import '../core/app_scope.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import 'animasi.dart';
+import 'animasi_lanjut.dart';
 import 'logo.dart';
 
 enum JenisStatus { sukses, bahaya, peringatan, info, netral }
@@ -246,8 +247,8 @@ class JudulBagian extends StatelessWidget {
                       color: Warna.bahayaMuda,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text(
-                      '$jumlah',
+                    child: AngkaBerganti(
+                      jumlah!,
                       style: t.labelMedium?.copyWith(color: Warna.bahaya),
                     ),
                   ),
@@ -489,7 +490,7 @@ class KartuKerangka extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Kartu(
-      child: Denyut(
+      child: Kilau(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

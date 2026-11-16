@@ -10,6 +10,7 @@ import 'absensi_page.dart';
 import 'dashboard_page.dart';
 import 'jadwal_page.dart';
 import '../widgets/animasi.dart';
+import '../widgets/animasi_lanjut.dart';
 import 'profil_page.dart';
 import 'tugas_page.dart';
 
@@ -77,27 +78,27 @@ class _HomeShellState extends State<HomeShell> {
                 destinations: const [
                   NavigationDestination(
                     icon: Icon(Icons.home_outlined),
-                    selectedIcon: Icon(Icons.home_rounded),
+                    selectedIcon: IkonMuncul(Icons.home_rounded),
                     label: 'Beranda',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.how_to_reg_outlined),
-                    selectedIcon: Icon(Icons.how_to_reg),
+                    selectedIcon: IkonMuncul(Icons.how_to_reg),
                     label: 'Absensi',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.assignment_outlined),
-                    selectedIcon: Icon(Icons.assignment),
+                    selectedIcon: IkonMuncul(Icons.assignment),
                     label: 'Tugas',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.calendar_month_outlined),
-                    selectedIcon: Icon(Icons.calendar_month),
+                    selectedIcon: IkonMuncul(Icons.calendar_month),
                     label: 'Jadwal',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.person_outline),
-                    selectedIcon: Icon(Icons.person),
+                    selectedIcon: IkonMuncul(Icons.person),
                     label: 'Profil',
                   ),
                 ],
