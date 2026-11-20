@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../models/kehadiran.dart';
+import '../models/rekap_kehadiran.dart';
 import '../models/sesi_absensi.dart';
 
 abstract class AbsensiRepository {
@@ -13,6 +14,10 @@ abstract class AbsensiRepository {
 
   /// Mencatat kehadiran. Token salah, kedaluwarsa, atau absen ganda ditolak.
   Future<void> hadir(String sesiId, String token);
+
+  /// Kehadiran pengguna yang login per mata kuliah, dari sesi yang sudah
+  /// dimulai dan tidak dibatalkan.
+  Future<RekapKehadiran> rekapKehadiranSaya();
 
   // ---- Khusus Admin ----
 

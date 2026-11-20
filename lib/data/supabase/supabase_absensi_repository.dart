@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/errors.dart';
 import '../../models/kehadiran.dart';
 import '../../models/pengguna.dart';
+import '../../models/rekap_kehadiran.dart';
 import '../../models/sesi_absensi.dart';
 import '../../repositories/absensi_repository.dart';
 import 'pemetaan.dart';
@@ -145,4 +146,33 @@ class SupabaseAbsensiRepository implements AbsensiRepository {
           for (final r in baris) kehadiranDari(r, email('${r['user_id']}')),
         ]..sort((a, b) => a.waktuAbsen.compareTo(b.waktuAbsen));
       });
+
+  @override
+  Future<RekapKehadiran> rekapKehadiranSaya() async {
+    try {
+      final sesi = await _db
+          .from('sesi_absensi')
+          .select('id, mata_kuliah_id, tanggal, jam_mulai, status');
+      final hadir = await _db
+          .from('kehadiran')
+          .select('sesi_id')
+          .eq('user_id', keId(_pengguna.uid));
+      final sekarang = DateTime.now();
+      final perSesi = <String, String>{
+        for (final r in sesi)
+          if (r['status'] != 'dibatalkan' &&
+              !dariWita(
+                '${r['tanggal']}',
+                '${r['jam_mulai']}',
+              ).isAfter(sekarang))
+            '${r['id']}': '${r['mata_kuliah_id']}',
+      };
+      return RekapKehadiran.hitung(
+        mataKuliahPerSesi: perSesi,
+        sesiDihadiri: {for (final r in hadir) '${r['sesi_id']}'},
+      );
+    } catch (e) {
+      throw pesanGagal(e, 'Gagal memuat rekap kehadiran');
+    }
+  }
 }

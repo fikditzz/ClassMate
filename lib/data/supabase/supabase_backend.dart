@@ -7,6 +7,8 @@ import 'supabase_absensi_repository.dart';
 import 'supabase_akun_repository.dart';
 import 'supabase_auth_repository.dart';
 import 'supabase_jadwal_repository.dart';
+import 'supabase_kas_repository.dart';
+import 'supabase_pengumuman_repository.dart';
 import 'supabase_tugas_repository.dart';
 
 /// Backend Supabase: Auth (login Google), Postgres dengan RLS, dan Realtime.
@@ -30,6 +32,8 @@ class SupabaseBackend implements BackendClassMate {
       tugas: SupabaseTugasRepository(_db, pengguna, email),
       jadwal: SupabaseJadwalRepository(_db),
       akun: SupabaseAkunRepository(_db),
+      kas: SupabaseKasRepository(_db, pengguna),
+      pengumuman: SupabasePengumumanRepository(_db),
     );
   }
 }

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
 /// Menu pintasan di dashboard. [tab] adalah indeks tab bottom navigation
-/// yang dibuka ketika menu dipilih.
+/// yang dibuka ketika menu dipilih; -1 berarti membuka halaman tersendiri.
 enum MenuItem {
   absen('Absen', Icons.how_to_reg_outlined, 1),
   tugasSaya('Tugas Saya', Icons.assignment_outlined, 2),
   buatSesi('Buat Sesi', Icons.key_outlined, 1),
   buatTugas('Buat Tugas', Icons.post_add, 2),
   rekap('Rekap', Icons.fact_check_outlined, 1),
-  jadwal('Jadwal', Icons.calendar_month_outlined, 3);
+  jadwal('Jadwal', Icons.calendar_month_outlined, 3),
+  kas('Uang Kas', Icons.account_balance_wallet_outlined, -1),
+  pengumuman('Pengumuman', Icons.campaign_outlined, -1),
+  kehadiran('Kehadiran', Icons.insights_outlined, -1);
 
   const MenuItem(this.label, this.ikon, this.tab);
 
@@ -106,6 +109,8 @@ class Admin extends Pengguna {
     MenuItem.buatTugas,
     MenuItem.rekap,
     MenuItem.jadwal,
+    MenuItem.kas,
+    MenuItem.pengumuman,
   ];
 }
 
@@ -125,6 +130,16 @@ class Dosen extends Admin {
 
   @override
   String get labelPeran => 'Dosen';
+
+  /// Uang kas urusan pengurus kelas, bukan dosen.
+  @override
+  List<MenuItem> get menuUtama => const [
+    MenuItem.buatSesi,
+    MenuItem.buatTugas,
+    MenuItem.rekap,
+    MenuItem.jadwal,
+    MenuItem.pengumuman,
+  ];
 }
 
 class Anggota extends Pengguna {
@@ -147,5 +162,8 @@ class Anggota extends Pengguna {
     MenuItem.absen,
     MenuItem.tugasSaya,
     MenuItem.jadwal,
+    MenuItem.kas,
+    MenuItem.pengumuman,
+    MenuItem.kehadiran,
   ];
 }

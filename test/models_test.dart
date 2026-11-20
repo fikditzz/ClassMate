@@ -27,7 +27,12 @@ void main() {
         MenuItem.absen,
         MenuItem.tugasSaya,
         MenuItem.jadwal,
+        MenuItem.kas,
+        MenuItem.pengumuman,
+        MenuItem.kehadiran,
       ]);
+      // Uang kas hanya untuk pengurus kelas, bukan dosen.
+      expect(admin.menuUtama, contains(MenuItem.kas));
     });
   });
 

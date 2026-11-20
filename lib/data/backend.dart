@@ -3,6 +3,8 @@ import '../repositories/absensi_repository.dart';
 import '../repositories/akun_repository.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/jadwal_repository.dart';
+import '../repositories/kas_repository.dart';
+import '../repositories/pengumuman_repository.dart';
 import '../repositories/tugas_repository.dart';
 
 /// Repository yang bergantung pada pengguna yang sedang login.
@@ -12,6 +14,8 @@ class RepositoriPengguna {
     required this.tugas,
     required this.jadwal,
     required this.akun,
+    required this.kas,
+    required this.pengumuman,
   });
 
   final AbsensiRepository absensi;
@@ -20,6 +24,9 @@ class RepositoriPengguna {
 
   /// Hanya dipakai admin kelas.
   final AkunRepository akun;
+
+  final KasRepository kas;
+  final PengumumanRepository pengumuman;
 }
 
 /// Titik masuk ke layanan data. Halaman tidak tahu apakah di baliknya

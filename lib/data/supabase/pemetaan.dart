@@ -191,6 +191,10 @@ ClassMateException pesanGagal(Object e, String awalan) {
       '42501' => '$awalan: kamu tidak punya izin.',
       '23505' => '$awalan: data yang sama sudah ada.',
       '23503' => '$awalan: data ini masih dipakai data lain.',
+      // Fungsi atau tabel belum ada: migrasi terbaru belum dijalankan.
+      'PGRST202' || 'PGRST205' || '42883' || '42P01' =>
+        '$awalan: fitur ini butuh pembaruan database. Minta admin '
+            'menjalankan migrasi Supabase terbaru.',
       _ when e.message == 'tanggal_asal_bukan_hari_jadwal' =>
         '$awalan: tanggal tidak sesuai hari jadwalnya.',
       _ => '$awalan: ${e.message}',

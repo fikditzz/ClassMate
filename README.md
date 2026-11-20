@@ -204,3 +204,23 @@ Skrip ini memotret setiap halaman mode demo ke PNG (390×844):
 ```bash
 flutter test tool/tangkap_layar_test.dart --dart-define=TANGKAP_DIR=build/tangkap
 ```
+
+## Uang kas, pengumuman, dan rekap kehadiran
+
+- **Uang Kas**: saldo dan arus kas bulan ini untuk semua anggota, status iuran
+  pribadi (progres pekan dan tunggakan), dan riwayat kas kelas. Iuran orang
+  lain tampil digabung per tanggal tanpa nama. Admin mencatat iuran,
+  pemasukan, dan pengeluaran, melihat status iuran tiap anggota, dan mengatur
+  nominal iuran mingguan.
+- **Pengumuman**: admin dan dosen membuat pengumuman (bisa ditandai penting);
+  yang terbaru tampil di beranda.
+- **Rekap Kehadiran**: persentase kehadiran pribadi di beranda dan rincian per
+  mata kuliah, dengan tanda untuk mata kuliah di bawah 75%.
+
+Fitur ini butuh migrasi `supabase/migrations/20261120090000_uang_kas_dan_pengumuman.sql`.
+Migrasi aman dijalankan pada tabel `kas_transaksi` yang sudah ada: kolom hanya
+ditambah bila belum ada dan nilai jenis lama (masuk/keluar) diseragamkan.
+
+```bash
+npx supabase db push
+```

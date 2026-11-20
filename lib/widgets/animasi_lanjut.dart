@@ -301,3 +301,116 @@ class _TeksHero extends StatelessWidget {
     );
   }
 }
+
+/// Nominal Rupiah yang menghitung naik ke nilainya, lalu bergeser mulus
+/// setiap kali nilainya berubah.
+class RupiahBerjalan extends StatelessWidget {
+  const RupiahBerjalan(this.nilai, {super.key, this.style, this.format});
+
+  final int nilai;
+  final TextStyle? style;
+
+  /// Pengubah angka ke teks, misalnya formatRupiah.
+  final String Function(int)? format;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: nilai.toDouble()),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => Text(
+        (format ?? (n) => '$n')(v.round()),
+        style: (style ?? const TextStyle()).copyWith(
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cincin persentase yang terisi beranimasi, dengan angka di tengah.
+class CincinPersen extends StatelessWidget {
+  const CincinPersen({
+    super.key,
+    required this.nilai,
+    required this.warna,
+    required this.latar,
+    this.ukuran = 120,
+    this.tebal = 12,
+    this.style,
+  });
+
+  /// 0..1
+  final double nilai;
+  final Color warna;
+  final Color latar;
+  final double ukuran;
+  final double tebal;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: nilai.clamp(0, 1).toDouble()),
+      duration: const Duration(milliseconds: 1100),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => SizedBox.square(
+        dimension: ukuran,
+        child: CustomPaint(
+          painter: _PelukisCincin(
+            nilai: v,
+            warna: warna,
+            latar: latar,
+            tebal: tebal,
+          ),
+          child: Center(
+            child: Text(
+              '${(v * 100).round()}%',
+              style: (style ?? const TextStyle()).copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PelukisCincin extends CustomPainter {
+  _PelukisCincin({
+    required this.nilai,
+    required this.warna,
+    required this.latar,
+    required this.tebal,
+  });
+
+  final double nilai;
+  final Color warna;
+  final Color latar;
+  final double tebal;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final kotak = (Offset.zero & size).deflate(tebal / 2);
+    final cat = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = tebal
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(kotak, 0, 2 * math.pi, false, cat..color = latar);
+    if (nilai > 0) {
+      canvas.drawArc(
+        kotak,
+        -math.pi / 2,
+        2 * math.pi * nilai,
+        false,
+        cat..color = warna,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PelukisCincin old) =>
+      old.nilai != nilai || old.warna != warna || old.latar != latar;
+}

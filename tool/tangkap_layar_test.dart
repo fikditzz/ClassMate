@@ -130,4 +130,31 @@ void main() {
     await _ketuk(t, find.text('Tambah Jadwal'));
     await _foto(t, '14_admin_form_jadwal');
   });
+
+  testWidgets('04 fitur kas, pengumuman, kehadiran', (t) async {
+    await _buka(t, tinggi: 1700);
+    await _ketuk(t, find.text('Masuk sebagai Anggota'));
+    await _foto(t, '15_beranda_baru');
+    await _ketuk(t, find.text('Uang Kas'));
+    await _foto(t, '16_kas_anggota');
+    Navigator.of(t.element(find.text('SALDO KAS KELAS'))).pop();
+    await _tunggu(t);
+    await _ketuk(t, find.text('Pengumuman').last);
+    await _foto(t, '17_pengumuman');
+    Navigator.of(t.element(find.text('Kuis Matematika Diskrit pekan depan'))).pop();
+    await _tunggu(t);
+    await _ketuk(t, find.text('Kehadiran').last);
+    await _foto(t, '18_rekap_kehadiran');
+  });
+
+  testWidgets('05 kas admin', (t) async {
+    await _buka(t, tinggi: 1700);
+    await _ketuk(t, find.text('Masuk sebagai Admin'));
+    await _ketuk(t, find.text('Uang Kas'));
+    await _foto(t, '19_kas_admin_riwayat');
+    await _ketuk(t, find.text('Status Iuran'));
+    await _foto(t, '20_kas_admin_status');
+    await _ketuk(t, find.text('Catat Transaksi'));
+    await _foto(t, '21_kas_admin_form');
+  });
 }

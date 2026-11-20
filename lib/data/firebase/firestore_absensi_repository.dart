@@ -6,7 +6,9 @@ import '../../core/errors.dart';
 import '../../models/kehadiran.dart';
 import '../../models/pengguna.dart';
 import '../../models/sesi_absensi.dart';
+import '../../models/rekap_kehadiran.dart';
 import '../../repositories/absensi_repository.dart';
+import 'tidak_didukung.dart';
 
 class FirestoreAbsensiRepository implements AbsensiRepository {
   FirestoreAbsensiRepository(this._db, this._pengguna);
@@ -121,4 +123,7 @@ class FirestoreAbsensiRepository implements AbsensiRepository {
             s.docs.map((d) => Kehadiran.dariFirestore(d.data())).toList()
               ..sort((a, b) => a.waktuAbsen.compareTo(b.waktuAbsen)),
       );
+
+  @override
+  Future<RekapKehadiran> rekapKehadiranSaya() async => tidakDidukung();
 }

@@ -3,10 +3,13 @@ import 'dart:async';
 import '../../core/errors.dart';
 import '../../models/akun.dart';
 import '../../models/jadwal.dart';
+import '../../models/kas.dart';
 import '../../models/kehadiran.dart';
 import '../../models/mata_kuliah.dart';
 import '../../models/pengguna.dart';
 import '../../models/pengumpulan.dart';
+import '../../models/pengumuman.dart';
+import '../../models/rekap_kehadiran.dart';
 import '../../models/perubahan_jadwal.dart';
 import '../../models/sesi_absensi.dart';
 import '../../models/tugas.dart';
@@ -14,6 +17,8 @@ import '../../repositories/absensi_repository.dart';
 import '../../repositories/akun_repository.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/jadwal_repository.dart';
+import '../../repositories/kas_repository.dart';
+import '../../repositories/pengumuman_repository.dart';
 import '../../repositories/penyimpanan_berkas.dart';
 import '../../repositories/tugas_repository.dart';
 import '../backend.dart';
@@ -40,6 +45,8 @@ class DemoBackend implements BackendClassMate {
     tugas: _DemoTugas(_data, pengguna),
     jadwal: _DemoJadwal(_data),
     akun: _DemoAkun(_data, pengguna),
+    kas: _DemoKas(_data, pengguna),
+    pengumuman: _DemoPengumuman(_data, pengguna),
   );
 }
 
@@ -152,8 +159,95 @@ class _DataDemo {
         tenggat: t.add(const Duration(days: 9)),
       ),
     ]);
+    _isiKasDanPengumuman(t);
   }
 
+  /// Iuran Rp10.000 per pekan sejak 8 pekan lalu (Senin), beberapa
+  /// pemasukan/pengeluaran, dan dua pengumuman.
+  void _isiKasDanPengumuman(DateTime t) {
+    final hariIni = DateTime(t.year, t.month, t.day);
+    final seninIni = hariIni.subtract(Duration(days: hariIni.weekday - 1));
+    final mulai = seninIni.subtract(const Duration(days: 7 * 7));
+    aturanIuran = AturanIuran(nominal: 10000, mulai: mulai);
+
+    final daftar = <TransaksiKas>[];
+    var n = 0;
+    void iuran(String uid, int pekan) {
+      for (var i = 0; i < pekan; i++) {
+        daftar.add(
+          TransaksiKas(
+            id: 'kas-${n++}',
+            jenis: JenisKas.iuran,
+            jumlah: 10000,
+            tanggal: mulai.add(Duration(days: 7 * i + 1)),
+            keterangan: 'Iuran pekan ${i + 1}',
+            userId: uid,
+          ),
+        );
+      }
+    }
+
+    iuran('demo-admin', 8);
+    iuran('demo-anggota', 6);
+    iuran('demo-anggota-2', 4);
+    daftar.addAll([
+      TransaksiKas(
+        id: 'kas-${n++}',
+        jenis: JenisKas.pemasukan,
+        jumlah: 150000,
+        tanggal: hariIni.subtract(const Duration(days: 20)),
+        keterangan: 'Sisa dana makrab angkatan',
+      ),
+      TransaksiKas(
+        id: 'kas-${n++}',
+        jenis: JenisKas.pengeluaran,
+        jumlah: 32000,
+        tanggal: hariIni.subtract(const Duration(days: 10)),
+        keterangan: 'Spidol dan penghapus papan',
+      ),
+      TransaksiKas(
+        id: 'kas-${n++}',
+        jenis: JenisKas.pengeluaran,
+        jumlah: 45000,
+        tanggal: hariIni.subtract(const Duration(days: 6)),
+        keterangan: 'Print modul praktikum Pemrograman Web',
+      ),
+      TransaksiKas(
+        id: 'kas-${n++}',
+        jenis: JenisKas.pengeluaran,
+        jumlah: 60000,
+        tanggal: hariIni.subtract(const Duration(days: 1)),
+        keterangan: 'Konsumsi kerja kelompok DAP',
+      ),
+    ]);
+    kas = _Nilai(daftar);
+
+    pengumuman = _Nilai([
+      Pengumuman(
+        id: 'p1',
+        judul: 'Kuis Matematika Diskrit pekan depan',
+        isi:
+            'Materi relasi dan fungsi. Bawa kalkulator dan kartu mahasiswa. '
+            'Kuis dimulai tepat 14:50 di AE 109.',
+        penting: true,
+        namaPembuat: 'Raka Pratama',
+        dibuatPada: t.subtract(const Duration(hours: 5)),
+      ),
+      Pengumuman(
+        id: 'p2',
+        judul: 'Iuran kas pekan ini',
+        isi:
+            'Iuran Rp10.000 bisa dibayar ke bendahara sampai Jumat. '
+            'Riwayat dan saldo kas bisa dilihat di menu Uang Kas.',
+        namaPembuat: 'Raka Pratama',
+        dibuatPada: t.subtract(const Duration(days: 3)),
+      ),
+    ]);
+  }
+
+  late AturanIuran? aturanIuran;
+  late final _Nilai<List<TransaksiKas>> kas;
+  late final _Nilai<List<Pengumuman>> pengumuman;
   late final _Nilai<List<MataKuliah>> mataKuliah;
   late final _Nilai<List<Jadwal>> jadwal;
   late final _Nilai<List<SesiAbsensi>> sesi;
@@ -207,6 +301,39 @@ class _DemoAbsensi implements AbsensiRepository {
   Stream<Set<String>> sesiYangSudahDihadiri() => _d.kehadiran.aliran.map(
     (l) => l.where((k) => k.uid == _p.uid).map((k) => k.sesiId).toSet(),
   );
+
+  @override
+  Future<RekapKehadiran> rekapKehadiranSaya() async {
+    final sekarang = DateTime.now();
+    final hariIni = DateTime(sekarang.year, sekarang.month, sekarang.day);
+    final perSesi = <String, String>{};
+    final hadir = <String>{};
+    // Riwayat contoh: tiap jadwal 6 pekan ke belakang, sesekali absen.
+    for (final j in _d.jadwal.v) {
+      for (var i = 1; i <= 6; i++) {
+        final tgl = hariIni.subtract(
+          Duration(days: (hariIni.weekday - j.hari) % 7 + 7 * (i - 1)),
+        );
+        final mulai = tgl.add(Duration(minutes: j.menitMulai));
+        if (mulai.isAfter(sekarang)) continue;
+        final id = 'riwayat-${j.id}-$i';
+        perSesi[id] = j.mataKuliahId;
+        if ((i + j.mataKuliahId.length + _p.uid.length) % 6 != 0) {
+          hadir.add(id);
+        }
+      }
+    }
+    for (final s in _d.sesi.v) {
+      if (!s.mulai.isAfter(sekarang)) perSesi[s.id] = s.mataKuliahId;
+    }
+    hadir.addAll(
+      _d.kehadiran.v.where((k) => k.uid == _p.uid).map((k) => k.sesiId),
+    );
+    return RekapKehadiran.hitung(
+      mataKuliahPerSesi: perSesi,
+      sesiDihadiri: hadir,
+    );
+  }
 
   @override
   Future<void> hadir(String sesiId, String token) async {
@@ -581,5 +708,194 @@ class _DemoAkun implements AkunRepository {
       );
     }
     _d.akun.v = _d.akun.v.where((a) => a.id != id).toList();
+  }
+}
+
+class _DemoKas implements KasRepository {
+  _DemoKas(this._d, this._p);
+
+  final _DataDemo _d;
+  final Pengguna _p;
+
+  void _cekAdmin() {
+    if (!_p.bolehKelolaAkun) {
+      throw const ClassMateException('Hanya admin kelas yang mengelola kas.');
+    }
+  }
+
+  @override
+  Future<RingkasanKas> ringkasan() async =>
+      RingkasanKas.dariTransaksi(_d.kas.v, aturan: _d.aturanIuran);
+
+  @override
+  Future<List<TransaksiKas>> riwayatKelas() async {
+    final nama = {for (final a in _d.akun.v) a.id: a.nama};
+    final hasil = <TransaksiKas>[];
+    if (_p.bolehKelolaAkun) {
+      for (final t in _d.kas.v) {
+        hasil.add(
+          TransaksiKas(
+            id: t.id,
+            jenis: t.jenis,
+            jumlah: t.jumlah,
+            tanggal: t.tanggal,
+            keterangan: t.keterangan,
+            userId: t.userId,
+            namaAnggota: nama[t.userId],
+          ),
+        );
+      }
+    } else {
+      // Iuran orang lain digabung per tanggal tanpa nama.
+      final iuranPerTanggal = <DateTime, (int, int)>{};
+      for (final t in _d.kas.v) {
+        if (t.jenis == JenisKas.iuran) {
+          final k = DateTime(t.tanggal.year, t.tanggal.month, t.tanggal.day);
+          final (jml, n) = iuranPerTanggal[k] ?? (0, 0);
+          iuranPerTanggal[k] = (jml + t.jumlah, n + 1);
+        } else {
+          hasil.add(t);
+        }
+      }
+      iuranPerTanggal.forEach((tgl, v) {
+        hasil.add(
+          TransaksiKas(
+            jenis: JenisKas.iuran,
+            jumlah: v.$1,
+            tanggal: tgl,
+            keterangan: 'Iuran kas',
+            jumlahAnggota: v.$2,
+          ),
+        );
+      });
+    }
+    return hasil..sort((a, b) => b.tanggal.compareTo(a.tanggal));
+  }
+
+  @override
+  Future<List<TransaksiKas>> iuranSaya() async =>
+      _d.kas.v
+          .where((t) => t.jenis == JenisKas.iuran && t.userId == _p.uid)
+          .toList()
+        ..sort((a, b) => b.tanggal.compareTo(a.tanggal));
+
+  @override
+  Future<void> simpan(TransaksiKas t) async {
+    _cekAdmin();
+    if (t.jumlah <= 0) {
+      throw const ClassMateException('Nominal harus lebih dari 0.');
+    }
+    if (t.jenis == JenisKas.iuran && t.userId == null) {
+      throw const ClassMateException('Pilih anggota yang membayar iuran.');
+    }
+    final baru = TransaksiKas(
+      id: t.id.isEmpty ? _d.idBaru('kas') : t.id,
+      jenis: t.jenis,
+      jumlah: t.jumlah,
+      tanggal: t.tanggal,
+      keterangan: t.keterangan.trim(),
+      userId: t.jenis == JenisKas.iuran ? t.userId : null,
+    );
+    _d.kas.v = [
+      for (final x in _d.kas.v)
+        if (x.id != baru.id) x,
+      baru,
+    ];
+  }
+
+  @override
+  Future<void> hapus(String id) async {
+    _cekAdmin();
+    _d.kas.v = _d.kas.v.where((t) => t.id != id).toList();
+  }
+
+  @override
+  Future<List<StatusIuran>> statusIuran() async {
+    _cekAdmin();
+    final hasil = <StatusIuran>[];
+    for (final a in _d.akun.v) {
+      if (a.peran == 'dosen') continue;
+      final milik = _d.kas.v
+          .where((t) => t.jenis == JenisKas.iuran && t.userId == a.id)
+          .toList();
+      final tanggal = milik.map((t) => t.tanggal).toList()..sort();
+      hasil.add(
+        StatusIuran(
+          userId: a.id,
+          nama: a.nama,
+          totalBayar: milik.fold(0, (s, t) => s + t.jumlah),
+          kaliBayar: milik.length,
+          terakhir: tanggal.isEmpty ? null : tanggal.last,
+        ),
+      );
+    }
+    return hasil..sort((a, b) => a.nama.compareTo(b.nama));
+  }
+
+  @override
+  Future<void> aturIuran(AturanIuran aturan) async {
+    _cekAdmin();
+    if (aturan.nominal <= 0) {
+      throw const ClassMateException('Nominal iuran harus lebih dari 0.');
+    }
+    _d.aturanIuran = aturan;
+  }
+}
+
+class _DemoPengumuman implements PengumumanRepository {
+  _DemoPengumuman(this._d, this._p);
+
+  final _DataDemo _d;
+  final Pengguna _p;
+
+  @override
+  Future<List<Pengumuman>> daftar() async =>
+      [..._d.pengumuman.v]
+        ..sort((a, b) => b.dibuatPada.compareTo(a.dibuatPada));
+
+  @override
+  Future<void> simpan(Pengumuman p) async {
+    if (!_p.isAdmin) {
+      throw const ClassMateException(
+        'Hanya admin dan dosen yang membuat pengumuman.',
+      );
+    }
+    if (p.judul.trim().isEmpty) {
+      throw const ClassMateException('Judul pengumuman wajib diisi.');
+    }
+    if (p.id.isEmpty) {
+      _d.pengumuman.v = [
+        ..._d.pengumuman.v,
+        Pengumuman(
+          id: _d.idBaru('pengumuman'),
+          judul: p.judul.trim(),
+          isi: p.isi.trim(),
+          penting: p.penting,
+          namaPembuat: _p.nama,
+          dibuatPada: DateTime.now(),
+        ),
+      ];
+    } else {
+      _d.pengumuman.v = [
+        for (final x in _d.pengumuman.v)
+          x.id == p.id
+              ? x.salin(
+                  judul: p.judul.trim(),
+                  isi: p.isi.trim(),
+                  penting: p.penting,
+                )
+              : x,
+      ];
+    }
+  }
+
+  @override
+  Future<void> hapus(String id) async {
+    if (!_p.isAdmin) {
+      throw const ClassMateException(
+        'Hanya admin dan dosen yang menghapus pengumuman.',
+      );
+    }
+    _d.pengumuman.v = _d.pengumuman.v.where((p) => p.id != id).toList();
   }
 }

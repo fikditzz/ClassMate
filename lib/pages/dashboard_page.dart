@@ -4,11 +4,16 @@ import '../core/app_scope.dart';
 import '../core/format.dart';
 import '../core/theme.dart';
 import '../models/jadwal.dart';
+import '../models/kas.dart';
+import '../models/pengguna.dart';
+import '../models/pengumuman.dart';
 import '../models/pengumpulan.dart';
 import '../models/perubahan_jadwal.dart';
+import '../models/rekap_kehadiran.dart';
 import '../models/sesi_absensi.dart';
 import '../models/tugas.dart';
 import '../widgets/animasi.dart';
+import '../widgets/beranda_tambahan.dart';
 import '../widgets/kartu_jadwal.dart';
 import '../widgets/umum.dart';
 import 'tugas_detail_page.dart';
@@ -39,6 +44,30 @@ class _DashboardPageState extends State<DashboardPage> {
     _sesi = scope.absensi.sesiAktif();
     _tugas = scope.tugas.daftarTugas();
     _kumpul = scope.tugas.pengumpulanSaya();
+    _muatTambahan();
+  }
+
+  late Future<List<Pengumuman>> _pengumuman;
+  Future<RingkasanKas>? _kas;
+  Future<RekapKehadiran>? _kehadiran;
+
+  /// Pengumuman, kas, dan kehadiran tidak realtime; dimuat ulang saat
+  /// kembali dari halamannya. Galat ditelan agar beranda tetap tampil.
+  void _muatTambahan() {
+    final scope = AppScope.baca(context);
+    final p = scope.pengguna;
+    _pengumuman = scope.pengumuman.daftar().catchError(
+      (Object _) => const <Pengumuman>[],
+    );
+    _kas = p.menuUtama.contains(MenuItem.kas) ? scope.kas.ringkasan() : null;
+    _kehadiran = p.menuUtama.contains(MenuItem.kehadiran)
+        ? scope.absensi.rekapKehadiranSaya()
+        : null;
+  }
+
+  void _segarkanTambahan() {
+    if (!mounted) return;
+    setState(_muatTambahan);
   }
 
   @override
@@ -76,54 +105,43 @@ class _DashboardPageState extends State<DashboardPage> {
                         ubahSnap.data ?? const [],
                       )
                     : null;
-                return ListView(
+                // Column (bukan ListView) agar bagian yang tergulir keluar
+                // layar tidak dibuang lalu dibangun ulang: StreamBuilder di
+                // dalamnya akan mendengarkan stream yang sama dua kali.
+                return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  // Bagian-bagian beranda masuk bertahap dari atas ke bawah.
-                  children: [
-                    for (final (i, w) in <Widget>[
-                      _KartuSapaan(),
-                      const SizedBox(height: 16),
-                      _KartuPresensi(
-                        memuat: !sesiSnap.hasData,
-                        aktif: aktif,
-                        hariIni: hariIni ?? const [],
-                      ),
-                      JudulBagian('Akses Pintas'),
-                      Row(
-                        children: [
-                          for (final (i, m) in p.menuUtama.indexed) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Expanded(
-                              child: Kartu(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 4,
-                                ),
-                                onTap: () => scope.bukaTab(m.tab),
-                                child: Column(
-                                  children: [
-                                    IkonKotak(m.ikon, ukuran: 44),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      m.label,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      _BagianJadwal(pertemuan: hariIni),
-                      _BagianTenggat(tugas: _tugas, kumpul: _kumpul),
-                    ].indexed)
-                      Muncul(urutan: i, child: w),
-                  ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // Bagian-bagian beranda masuk bertahap dari atas ke bawah.
+                    children: [
+                      for (final (i, w) in <Widget>[
+                        _KartuSapaan(),
+                        KartuPengumumanTerbaru(
+                          daftar: _pengumuman,
+                          onKembali: _segarkanTambahan,
+                        ),
+                        const SizedBox(height: 16),
+                        _KartuPresensi(
+                          memuat: !sesiSnap.hasData,
+                          aktif: aktif,
+                          hariIni: hariIni ?? const [],
+                        ),
+                        StatistikBeranda(
+                          kehadiran: _kehadiran,
+                          kas: _kas,
+                          onKembali: _segarkanTambahan,
+                        ),
+                        JudulBagian('Akses Pintas'),
+                        GridAksesPintas(
+                          menu: p.menuUtama,
+                          onKembali: _segarkanTambahan,
+                        ),
+                        _BagianJadwal(pertemuan: hariIni),
+                        _BagianTenggat(tugas: _tugas, kumpul: _kumpul),
+                      ].indexed)
+                        Muncul(urutan: i, child: w),
+                    ],
+                  ),
                 );
               },
             ),

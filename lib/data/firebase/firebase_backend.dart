@@ -31,5 +31,7 @@ class FirebaseBackend implements BackendClassMate {
     tugas: FirestoreTugasRepository(_db, pengguna),
     jadwal: FirestoreJadwalRepository(_db),
     akun: const AkunTidakDidukung(),
+    kas: const KasTidakDidukung(),
+    pengumuman: const PengumumanTidakDidukung(),
   );
 }

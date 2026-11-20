@@ -79,3 +79,56 @@ String inisial(String nama) {
       .where((k) => k.isNotEmpty);
   return kata.take(2).map((k) => k[0].toUpperCase()).join();
 }
+
+final _rupiah = NumberFormat.currency(
+  locale: 'id_ID',
+  symbol: 'Rp',
+  decimalDigits: 0,
+);
+final _bulanTahun = DateFormat('MMMM y', 'id_ID');
+
+/// 150000 menjadi "Rp150.000".
+String formatRupiah(int nilai) => _rupiah.format(nilai);
+
+/// Rupiah bertanda untuk arus kas: "+Rp10.000" atau "−Rp45.000".
+String formatRupiahBertanda(int nilai) =>
+    nilai < 0 ? '−${formatRupiah(-nilai)}' : '+${formatRupiah(nilai)}';
+
+/// "November 2026".
+String formatBulanTahun(DateTime t) => _bulanTahun.format(t);
+
+/// "Baru saja", "15 menit lalu", "3 jam lalu", "Kemarin", atau tanggal.
+String formatRelatif(DateTime t, [DateTime? sekarang]) {
+  final n = sekarang ?? DateTime.now();
+  final d = n.difference(t);
+  if (d.isNegative || d.inMinutes < 1) return 'Baru saja';
+  if (d.inHours < 1) return '${d.inMinutes} menit lalu';
+  final hari = DateTime(
+    n.year,
+    n.month,
+    n.day,
+  ).difference(DateTime(t.year, t.month, t.day)).inDays;
+  if (hari == 0) return '${d.inHours} jam lalu';
+  if (hari == 1) return 'Kemarin, ${formatJam(t)}';
+  if (hari < 7) return '$hari hari lalu';
+  return _tanggalPendek.format(t);
+}
+
+final _tanggalSingkat = DateFormat('d MMM', 'id_ID');
+final _tanggalSingkatTahun = DateFormat('d MMM y', 'id_ID');
+
+/// Tanggal tanpa jam: "Hari ini", "Kemarin", "28 Sep", atau "28 Sep 2025"
+/// bila beda tahun.
+String formatTanggalSingkat(DateTime t, [DateTime? sekarang]) {
+  final n = sekarang ?? DateTime.now();
+  final selisih = DateTime(
+    n.year,
+    n.month,
+    n.day,
+  ).difference(DateTime(t.year, t.month, t.day)).inDays;
+  if (selisih == 0) return 'Hari ini';
+  if (selisih == 1) return 'Kemarin';
+  return t.year == n.year
+      ? _tanggalSingkat.format(t)
+      : _tanggalSingkatTahun.format(t);
+}
