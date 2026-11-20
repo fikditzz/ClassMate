@@ -33,5 +33,6 @@ class FirebaseBackend implements BackendClassMate {
     akun: const AkunTidakDidukung(),
     kas: const KasTidakDidukung(),
     pengumuman: const PengumumanTidakDidukung(),
+    rekap: const RekapTidakDidukung(),
   );
 }

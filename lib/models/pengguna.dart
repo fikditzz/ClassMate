@@ -7,7 +7,7 @@ enum MenuItem {
   tugasSaya('Tugas Saya', Icons.assignment_outlined, 2),
   buatSesi('Buat Sesi', Icons.key_outlined, 1),
   buatTugas('Buat Tugas', Icons.post_add, 2),
-  rekap('Rekap', Icons.fact_check_outlined, 1),
+  rekap('Rekap', Icons.fact_check_outlined, -1),
   jadwal('Jadwal', Icons.calendar_month_outlined, 3),
   kas('Uang Kas', Icons.account_balance_wallet_outlined, -1),
   pengumuman('Pengumuman', Icons.campaign_outlined, -1),

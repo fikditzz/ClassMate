@@ -157,4 +157,15 @@ void main() {
     await _ketuk(t, find.text('Catat Transaksi'));
     await _foto(t, '21_kas_admin_form');
   });
+
+  testWidgets('06 rekap dan ekspor', (t) async {
+    await _buka(t, tinggi: 1700);
+    await _ketuk(t, find.text('Masuk sebagai Admin'));
+    await _ketuk(t, find.text('Rekap'));
+    await _foto(t, '22_rekap_hadir');
+    await _ketuk(t, find.text('Tugas').last);
+    await _foto(t, '23_rekap_tugas');
+    await _ketuk(t, find.text('Kas').last);
+    await _foto(t, '24_rekap_kas');
+  });
 }

@@ -11,6 +11,7 @@ import '../models/rekap_kehadiran.dart';
 import '../pages/kas_page.dart';
 import '../pages/pengumuman_page.dart';
 import '../pages/rekap_kehadiran_page.dart';
+import '../pages/rekap_page.dart';
 import 'animasi_lanjut.dart';
 import 'umum.dart';
 
@@ -23,6 +24,8 @@ Future<void> bukaMenu(BuildContext context, MenuItem m) async {
       await bukaPengumuman(context);
     case MenuItem.kehadiran:
       await bukaRekapKehadiran(context);
+    case MenuItem.rekap:
+      await bukaRekap(context);
     default:
       AppScope.baca(context).bukaTab(m.tab);
   }

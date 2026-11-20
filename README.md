@@ -224,3 +224,26 @@ ditambah bila belum ada dan nilai jenis lama (masuk/keluar) diseragamkan.
 ```bash
 npx supabase db push
 ```
+
+## Rekap dan ekspor (PDF/Excel)
+
+Menu **Rekap** (admin kelas dan dosen) menampilkan pratinjau lalu mengekspor
+dokumen dengan format daftar hadir kampus (A4 lanskap, kop UNM, 15 mahasiswa
+per halaman, kolom pertemuan 1–7, UTS, 8–14, UAS):
+
+- **Absen**: daftar hadir per mata kuliah (H = hadir, A = tidak hadir) dan
+  lembar rekapitulasi persentase kehadiran dengan batas 75%.
+- **Tugas**: status pengumpulan tiap tugas per mahasiswa.
+- **Kas** (admin): buku kas dengan saldo berjalan dan status iuran anggota.
+
+Berkas dibagikan lewat lembar bagikan sistem (simpan ke Files, Drive, WhatsApp).
+Kolom STAMBUK diisi dari `users.username`, jadi isi username dengan NIM.
+Sesi yang masih berjalan belum dihitung. Fitur ini butuh migrasi
+`supabase/migrations/20261121090000_rekap_dan_ekspor.sql` (fungsi
+`daftar_mahasiswa()` dan `rekap_absen()`).
+
+Contoh berkas dari data demo:
+
+```bash
+flutter test tool/contoh_rekap_test.dart --dart-define=REKAP_DIR=build/rekap
+```

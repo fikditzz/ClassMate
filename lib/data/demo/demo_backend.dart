@@ -9,6 +9,7 @@ import '../../models/mata_kuliah.dart';
 import '../../models/pengguna.dart';
 import '../../models/pengumpulan.dart';
 import '../../models/pengumuman.dart';
+import '../../models/rekap.dart';
 import '../../models/rekap_kehadiran.dart';
 import '../../models/perubahan_jadwal.dart';
 import '../../models/sesi_absensi.dart';
@@ -19,6 +20,7 @@ import '../../repositories/auth_repository.dart';
 import '../../repositories/jadwal_repository.dart';
 import '../../repositories/kas_repository.dart';
 import '../../repositories/pengumuman_repository.dart';
+import '../../repositories/rekap_repository.dart';
 import '../../repositories/penyimpanan_berkas.dart';
 import '../../repositories/tugas_repository.dart';
 import '../backend.dart';
@@ -47,6 +49,7 @@ class DemoBackend implements BackendClassMate {
     akun: _DemoAkun(_data, pengguna),
     kas: _DemoKas(_data, pengguna),
     pengumuman: _DemoPengumuman(_data, pengguna),
+    rekap: _DemoRekap(_data, pengguna),
   );
 }
 
@@ -284,6 +287,65 @@ class _DataDemo {
   var _urut = 0;
 
   String idBaru(String awalan) => '$awalan-demo-${_urut++}';
+
+  /// Riwayat sesi contoh: tiap jadwal sampai [pekanRiwayat] pekan ke
+  /// belakang (yang sudah dimulai).
+  static const pekanRiwayat = 10;
+
+  List<_SesiRiwayat> riwayatSesi(DateTime sekarang) {
+    final hariIni = DateTime(sekarang.year, sekarang.month, sekarang.day);
+    final hasil = <_SesiRiwayat>[];
+    for (final j in jadwal.v) {
+      for (var i = 1; i <= pekanRiwayat; i++) {
+        final tgl = hariIni.subtract(
+          Duration(days: (hariIni.weekday - j.hari) % 7 + 7 * (i - 1)),
+        );
+        final mulai = tgl.add(Duration(minutes: j.menitMulai));
+        if (mulai.isAfter(sekarang)) continue;
+        hasil.add(_SesiRiwayat('riwayat-${j.id}-$i', j.mataKuliahId, mulai, i));
+      }
+    }
+    return hasil;
+  }
+
+  /// Pola hadir contoh yang tetap: sesekali tidak hadir.
+  static bool hadirRiwayat(_SesiRiwayat r, String uid) {
+    var h = 0;
+    for (final c in uid.codeUnits) {
+      h = (h * 31 + c) & 0x7fffffff;
+    }
+    return (r.pekan + r.mataKuliahId.length + h) % 6 != 0;
+  }
+
+  /// Mahasiswa contoh tambahan (fiktif) agar dokumen rekap terisi.
+  static const mahasiswaFiktif = [
+    'Adinda Putri Lestari',
+    'Ahmad Fauzan',
+    'Aulia Rahmawati',
+    'Bayu Firmansyah',
+    'Citra Ayuningtyas',
+    'Dimas Prasetyo',
+    'Fadhil Ramadhan',
+    'Gita Permatasari',
+    'Hendra Kurniawan',
+    'Intan Nurhaliza',
+    'Kevin Wijaya',
+    'Laras Sekarwati',
+    'Muhammad Rizky',
+    'Nabila Azzahra',
+    'Putra Mahendra',
+    'Rina Oktaviani',
+    'Yusuf Habibi',
+  ];
+}
+
+class _SesiRiwayat {
+  const _SesiRiwayat(this.id, this.mataKuliahId, this.mulai, this.pekan);
+
+  final String id;
+  final String mataKuliahId;
+  final DateTime mulai;
+  final int pekan;
 }
 
 class _DemoAbsensi implements AbsensiRepository {
@@ -305,23 +367,11 @@ class _DemoAbsensi implements AbsensiRepository {
   @override
   Future<RekapKehadiran> rekapKehadiranSaya() async {
     final sekarang = DateTime.now();
-    final hariIni = DateTime(sekarang.year, sekarang.month, sekarang.day);
     final perSesi = <String, String>{};
     final hadir = <String>{};
-    // Riwayat contoh: tiap jadwal 6 pekan ke belakang, sesekali absen.
-    for (final j in _d.jadwal.v) {
-      for (var i = 1; i <= 6; i++) {
-        final tgl = hariIni.subtract(
-          Duration(days: (hariIni.weekday - j.hari) % 7 + 7 * (i - 1)),
-        );
-        final mulai = tgl.add(Duration(minutes: j.menitMulai));
-        if (mulai.isAfter(sekarang)) continue;
-        final id = 'riwayat-${j.id}-$i';
-        perSesi[id] = j.mataKuliahId;
-        if ((i + j.mataKuliahId.length + _p.uid.length) % 6 != 0) {
-          hadir.add(id);
-        }
-      }
+    for (final r in _d.riwayatSesi(sekarang)) {
+      perSesi[r.id] = r.mataKuliahId;
+      if (_DataDemo.hadirRiwayat(r, _p.uid)) hadir.add(r.id);
     }
     for (final s in _d.sesi.v) {
       if (!s.mulai.isAfter(sekarang)) perSesi[s.id] = s.mataKuliahId;
@@ -897,5 +947,94 @@ class _DemoPengumuman implements PengumumanRepository {
       );
     }
     _d.pengumuman.v = _d.pengumuman.v.where((p) => p.id != id).toList();
+  }
+}
+
+class _DemoRekap implements RekapRepository {
+  _DemoRekap(this._d, this._p);
+
+  final _DataDemo _d;
+  final Pengguna _p;
+
+  void _cekPengelola() {
+    if (!_p.isAdmin) {
+      throw const ClassMateException(
+        'Rekap hanya untuk admin kelas dan dosen.',
+      );
+    }
+  }
+
+  @override
+  Future<String?> namaKelas() async => 'TEKOM A';
+
+  @override
+  Future<List<MahasiswaRekap>> daftarMahasiswa() async {
+    _cekPengelola();
+    var n = 1;
+    String stambuk() => '25020410${(n++).toString().padLeft(2, '0')}';
+    return [
+      for (final a in _d.akun.v)
+        if (a.peran != 'dosen')
+          MahasiswaRekap(id: a.id, nama: a.nama, stambuk: stambuk()),
+      for (final (i, nama) in _DataDemo.mahasiswaFiktif.indexed)
+        MahasiswaRekap(id: 'fiktif-$i', nama: nama, stambuk: stambuk()),
+    ];
+  }
+
+  @override
+  Future<RekapAbsenMk> rekapAbsen(String mataKuliahId) async {
+    final mahasiswa = await daftarMahasiswa();
+    final sekarang = DateTime.now();
+    final pertemuan = <PertemuanRekap>[];
+    final hadir = <(String, String)>{};
+    for (final r in _d.riwayatSesi(sekarang)) {
+      if (r.mataKuliahId != mataKuliahId) continue;
+      pertemuan.add(PertemuanRekap(sesiId: r.id, tanggal: r.mulai));
+      for (final m in mahasiswa) {
+        if (_DataDemo.hadirRiwayat(r, m.id)) hadir.add((r.id, m.id));
+      }
+    }
+    for (final s in _d.sesi.v) {
+      final selesai =
+          s.keFirestore()['status'] == 'tutup' || !s.berakhir.isAfter(sekarang);
+      if (s.mataKuliahId == mataKuliahId && selesai) {
+        pertemuan.add(PertemuanRekap(sesiId: s.id, tanggal: s.mulai));
+      }
+    }
+    for (final k in _d.kehadiran.v) {
+      hadir.add((k.sesiId, k.uid));
+    }
+    return RekapAbsenMk(
+      mataKuliahId: mataKuliahId,
+      mahasiswa: mahasiswa,
+      pertemuan: pertemuan,
+      hadir: hadir,
+    );
+  }
+
+  @override
+  Future<RekapTugasMk> rekapTugas(String mataKuliahId) async {
+    final mahasiswa = await daftarMahasiswa();
+    final tugas = _d.tugas.v.where((t) => t.mataKuliahId == mataKuliahId);
+    final terkumpul = <(String, String)>{
+      for (final p in _d.pengumpulan.v) (p.tugasId, p.uid),
+    };
+    // Contoh: sebagian mahasiswa fiktif sudah mengumpulkan.
+    for (final t in tugas) {
+      for (final (i, m) in mahasiswa.indexed) {
+        if (m.id.startsWith('fiktif-') && (i + t.id.length) % 3 != 0) {
+          terkumpul.add((t.id, m.id));
+        }
+      }
+    }
+    return RekapTugasMk(
+      mataKuliahId: mataKuliahId,
+      mahasiswa: mahasiswa,
+      tugas: [
+        for (final t in tugas)
+          TugasRekap(id: t.id, judul: t.judul, tenggat: t.tenggat),
+      ],
+      terkumpul: terkumpul,
+    );
   }
 }

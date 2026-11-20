@@ -2,9 +2,11 @@ import '../../core/errors.dart';
 import '../../models/akun.dart';
 import '../../models/kas.dart';
 import '../../models/pengumuman.dart';
+import '../../models/rekap.dart';
 import '../../repositories/akun_repository.dart';
 import '../../repositories/kas_repository.dart';
 import '../../repositories/pengumuman_repository.dart';
+import '../../repositories/rekap_repository.dart';
 
 /// Backend Firebase lama tidak lagi dikembangkan; fitur baru hanya ada di
 /// Supabase dan mode demo.
@@ -68,4 +70,20 @@ class PengumumanTidakDidukung implements PengumumanRepository {
 
   @override
   Future<void> hapus(String id) async => tidakDidukung();
+}
+
+class RekapTidakDidukung implements RekapRepository {
+  const RekapTidakDidukung();
+
+  @override
+  Future<String?> namaKelas() async => null;
+
+  @override
+  Future<List<MahasiswaRekap>> daftarMahasiswa() async => tidakDidukung();
+
+  @override
+  Future<RekapAbsenMk> rekapAbsen(String mataKuliahId) async => tidakDidukung();
+
+  @override
+  Future<RekapTugasMk> rekapTugas(String mataKuliahId) async => tidakDidukung();
 }

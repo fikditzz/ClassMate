@@ -9,6 +9,7 @@ import '../repositories/auth_repository.dart';
 import '../repositories/jadwal_repository.dart';
 import '../repositories/kas_repository.dart';
 import '../repositories/pengumuman_repository.dart';
+import '../repositories/rekap_repository.dart';
 import '../repositories/tugas_repository.dart';
 
 /// Menyediakan pengguna yang login, repository, dan daftar mata kuliah
@@ -40,6 +41,7 @@ class AppScope extends InheritedWidget {
   AkunRepository get akun => repo.akun;
   KasRepository get kas => repo.kas;
   PengumumanRepository get pengumuman => repo.pengumuman;
+  RekapRepository get rekap => repo.rekap;
 
   /// Halaman yang dibuka dengan Navigator.push berada di luar AppScope,
   /// jadi dibungkus ulang dengan data yang sama.
